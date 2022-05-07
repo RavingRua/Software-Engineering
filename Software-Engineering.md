@@ -562,7 +562,7 @@ Arlow 和 Neustadt 提出良好的设计类需要拥有四个特征：
 
 ##### 依赖倒置
 
-**依赖倒置（dependency inversion）**指顶层结构调用低层模块的现象。依赖倒置并非不可取，很多时候依赖倒置可以简化模块的设计，但是为了减少副作用和错误扩散的影响，必须遵守**依赖倒置原则**：高层欧快不应当直接依赖于低层模块，而应该依赖于抽象，即通过接口调用底层模块，而不访问其实现。
+**依赖倒置（dependency inversion）**指顶层结构调用低层模块的现象。依赖倒置并非不可取，很多时候依赖倒置可以简化模块的设计，但是为了减少副作用和错误扩散的影响，必须遵守**依赖倒置原则**：高层模块不应当直接依赖于低层模块，而应该依赖于抽象，即通过接口调用底层模块，而不访问其实现。
 
 #### 设计原则
 
@@ -757,9 +757,12 @@ Arlow 和 Neustadt 提出良好的设计类需要拥有四个特征：
 
 + 客户机-服务器架构：该架构将构件分为客户机和服务器两种类型，客户机只负责处理简单逻辑，复杂运算交由服务器提供的服务过程处理，该约束下两类构件各司其职，拥有较高的可集成性。典型的实现有操作系统服务、Web 应用等；
 
-+ 面向服务架构：SOA 架构实现的系统由一组分布式的松耦合、粗粒度的网络应用组成，每个网络应用节点为调用者提供明确服务，调用者无需了解任何服务实现细节，具有高重用、可组合的特性；
++ 面向服务架构：SOA 架构实现的系统由一组分布式的松耦合、粗粒度的网络应用组成，每个网络应用节点为调用者提供明确服务，调用者无需了解任何服务实现细节，由 SOA 提供系统集成，具有高重用、可组合的特性；
 
-+ 微服务架构：微服务架构实现的软件由一组小而自治的应用组成，这些应用提供单一服务，具有规模小、松耦合、高独立的特点，所有服务由单一入口：API 网关调用。微服务架构具有高敏捷、小团队、混合技术、错误隔离、数据隔离和可伸缩性优势。
++ 微服务架构：微服务架构是对 SOA 的一种扩展，强调将 SOA 的服务彻底地组件化和服务化，即 SOA 集成对象的完全分离。微服务实现的软件由一组小而自治的应用组成，这些应用提供单一服务，具有规模小、松耦合、高独立的特点，所有服务由单一入口：API 网关调用。微服务架构具有高敏捷、小团队、混合技术、错误隔离、数据隔离和可伸缩性优势。
+
+  > 微服务架构 = 80% 的 SOA 服务架构思想 + 100% 的组件化架构思想 + 80% 的领域建模思想
+
 
 要确定软件应该采用的架构风格，可以参考其他类似的项目采取的解决方案，通过进行需求问题分类和概括，使用适合的风格对症下药。
 
@@ -787,9 +790,213 @@ Arlow 和 Neustadt 提出良好的设计类需要拥有四个特征：
 
 架构设计的各个过程
 
-#### 微服务
+#### 软件构件设计
 
+**构件**是系统中模块化的、可配置的和可替换的部件，该部件封装了实现并暴露了一组**接口**。在面向对象范式中表示为一个类或一组协作的类。构件设计将需求流中的概念类细化为实现流中可用的设计类，完善构件接口和类的成员描述：
 
+![image-20220507225210975](assets/Software-Engineering/image-20220507225210975.png)
+
+##### 构件类型
+
+软件构件可以分为三种类型：
+
+1. **控制构件**：上层构件，协调当前问题域中其他构件的调用；
+2. **问题域构件**：中层构件，通常包含用户希望的一组或一项功能，调用底层构件；
+3. **基础设施构件**：底层构件，包含功能过程的具体实现。
+
+##### 构件设计原则
+
+不良好的面向对象设计将带来一系列灾难，设计不佳的基类、随意的外部引用、微妙的继承和混入等行为将会让复用机制称为耦合性发源地。下面是四项被广泛认可的设计基本原则，用于减少错误设计带来的在构件变更时产生的副作用和高成本。
+
++ **开闭原则（The Open-Closed Principle，OCP）**：模块（构件）应该对外延具有开放性，对修改具有封闭性。即只需最小的变更就能让构件适应新需求，最佳实践是尽可能使用接口和抽象类型操作对象实例，减少对具体实现（派生类和对象）的直接引用。下面是一个例子，说明了使用抽象方法实现和使用抽象类型指针操作对象在发生变更时带来的好处：
+
+  ```cs
+  	// 违反开闭原则的例子
+  	class GraphicEditor
+      {
+      	// 如果要添加新图形的绘制功能，必须在基类和派生类中同时做修改
+          public void drawShape(Shape s)
+          {
+              if (s.m_type == 1) drawRectangle(s);
+              else if (s.m_type == 2) drawCircle(s);
+          }
+  
+          public void drawCircle(Circle r)
+          {
+              // ....
+          }
+  
+          public void drawRectangle(Rectangle r)
+          {
+              // ....
+          }
+      }
+  
+      class Shape
+      {
+          int m_type;
+      }
+  
+      class Rectangle : Shape {
+          public void Rectangle()
+          {
+              super.m_type = 1;
+          }
+      }
+  
+      class Circle : Shape {
+          public void Circle()
+          {
+              super.m_type = 2;
+          }
+      }
+  ```
+
+  ```cs
+  	// 符合开闭原则的例子
+  	class GraphicEditor
+      {
+          // 使用抽象类指针，具体实现由派生类决定，添加新功能时只需操作派生类
+          public void drawShape(Shape s)
+          {
+              s.draw();
+          }
+      }
+  
+  	// 定义抽象类，只需让派生类实现该方法
+      abstract class Shape
+      {
+          abstract void draw();
+      }
+  
+      class Rectangle : Shape
+      {
+          public void draw()
+          {
+              // draw the rectangle
+          }
+      }
+  
+      class Circle : Shape 
+      {
+          public void draw()
+          {
+              // draw the Circle
+          }
+      }
+  ```
+
++ **里氏替换原则（Liskov Substitution Principle）**：派生类在特定条件下可以替换其基类。即派生类在满足如下原则时，可以在不改变变量指针类型（此前为基类）的情况下直接改变操作的对象类型为派生类型，而不会产生副作用和在基类上的变动：
+
+  + 派生类完全实现基类所有抽象方法：使得基类指针可以进行所有操作；
+  + 操作派生类对象时使用接口或基类型变量：使得对象类型变更时无需改变指针类型；
+  + 派生类可以扩展基类功能，但不能丢弃基类功能：派生类只覆写基类虚方法，并一定在其虚方法体中调用基类虚方法，让基类指针操作的派生类对象行为可预测；
+
+  下面是一个例子，说明符合里氏替换原则的派生类和对象操作代码带来的好处：
+
+  ```cs
+  class Animal
+  {
+      private string name;
+  
+      void Animal(string name)
+      {
+          this.name = name;
+      }
+  
+      public void Description()
+      {
+          Console.WriteLine("This is a(an) " + name);
+      }
+  }
+  
+  // Cat 和 Dog 派生类都采取扩展一个自己的操作增加功能
+  
+  class Cat : Animal
+  {
+      public void Cat(string name)
+      {
+          // ...
+      }
+  
+      public void Mew()
+      {
+          Console.WriteLine("The cat is saying like 'mew'");
+      }
+  }
+  
+  class Dog : Animal { /* ... */ }
+  
+  class Demo
+  {
+      	// 此处直接使用派生类指针操作对象，每增加一种派生类，就必须同时变更该方法和新派生类的代码
+          public void DescriptionTheAnimal(Animal animal)
+          {
+              if (typeof(animal) is Cat)
+              {
+                  Cat cat = (Cat)animal;
+                  Cat.Description();
+                  Cat.Mew();
+              }
+              else if (typeof(animal) is Dog)
+              {
+                  Dog dog = (Dog)animal;
+                  Dog.Description();
+                  Dog.Bark();
+              }
+          }
+  }
+  ```
+
+  ```cs
+  class Animal
+  {
+      private string name;
+  
+      void Animal(string name)
+      {
+          this.name = name;
+      }
+  
+      public void Description()
+      {
+          Console.WriteLine("This is a(an) " + name);
+      }
+  
+      abstract void doAction(); // 此处使用抽象方法策略
+  }
+  
+  class Cat : Animal
+  {
+      void Cat(string name)
+      {
+          // ...
+      }
+  
+      // 派生类实现了基类抽象方法，因此该方法可以被基类指针调用
+      // 如果基类是一个虚方法，还需添加 override 关键字并调用基类虚方法：base.doAction();
+      public void doAction()
+      {
+          Console.WriteLine("The cat is saying like 'mew'");
+      }
+  }
+  
+  class Demo
+  {
+      	// 因为使用基类指针，之后该方法接收任何一个新的派生类对象时，都无需变动代码
+          public void DescriptionTheAnimal(Animal animal)
+          {
+              animal.Description();
+              animal.doAction();
+          }
+  }
+  ```
+
++ **依赖倒置原则（Dependency Inversion Principle，DIP）**：依赖抽象，而不是实现。最佳实践是尽可能使用接口或抽象类型变量操作派生类对象，减少对底层构件的直接依赖，发生变更时只需统一修改高层的控制构件；
++ **接口分离原则（Interface Segregation Principle，ISP）**：多个专用接口将比一个通用接口好。如果一个接口有多个客户，但每个客户都不会使用接口上的所有操作，实现该接口的模块就可能不是功能内聚的。最佳实践是使用多个客户专用接口，不要让这些接口包含客户无需的操作，可以采取接口间的继承来减少耦合的操作声明；
++ **发布复用等价性原则（Release Reuse Equivalent Principle，REP）**：复用的粒度就是发布的粒度。即应该将可复用的一组类打包成一个软件包，作为版本控制的最小单位，因此在更新时只需更新包，而不是零散的更新单个类；
++ **共同封装原则（Common Closure Principle，CCP）**：一起变更的类应该合并。即软件包中的类需要根据内聚性打包，此时单个软件包的修改将不会引发其他软件包的必要更新；
++ **共同复用原则（Common Ruse Principle，CRP）**：不能一起复用的类不应该分为一组。即软件包中的类需要根据内聚性打包，如果一个模块包中包含两组提供不同服务的功能组，在修改其中一个组时，使用另一个无需变更的组的外部模块也不得不进行一次不必要的更新。
 
 ### 2.4 实现
 
@@ -1045,8 +1252,8 @@ E-R 图包含以下符号：
 
 架构图一般分为功能性架构图和技术性架构图。架构图的表示并没有通用的标准，能够完成表述体系结构的任务即可。架构图一般分为两类：
 
-+ 技术架构模型
-+ 功能结构模型
++ 技术架构模型：面向专业技术人员
++ 功能结构模型：面向用户和管理人员
 
 #### 实例
 
